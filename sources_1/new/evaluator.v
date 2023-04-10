@@ -19,7 +19,7 @@
 // 
 //////////////////////////////////////////////////////////////////////////////////
  
- 
+
 module evaluator(
     input clk_i ,
     input rst_i ,
@@ -32,7 +32,7 @@ module evaluator(
     output ready,
     output busy_o ,
     output reg [7:0] y_bo
-    );
+);
     
     localparam IDLE = 2'h0 ;
     localparam WORK_MULT = 2'h1 ;
@@ -51,26 +51,45 @@ module evaluator(
     wire a_ready, b_ready, sqrt_ready;
     reg [16:0] sum;
     wire [7:0] res;
-    
+
     reg a_rst;
     reg b_rst;
     reg sum_rst;
-    
+
     assign ready = ready_in;
     assign busy_o = state > 0 ;
     
+    wire [16:0] summator_reg1;
+    wire [16:0] summator_reg2;
+    wire [16:0] summator_result;
+    
+    wire [16:0] sqrt_operand1;
+    wire [16:0] sqrt_operand2;
+    
+    assign summator_reg1 = (state == WORK_MULT) ? a_sq : sqrt_operand1;
+    assign summator_reg2 = (state == WORK_MULT) ? b_sq : sqrt_operand2;
+       
+    summator main_summator(
+        .a1(summator_reg1), .b1(summator_reg2),
+        .res1(summator_result)
+    );
+
     multer a_square(.clk_i(clk_i), .rst_i(a_rst), .ready(a_ready), 
                     .a_bi(a_bi), .b_bi(a_bi), .start_i(start_mult), 
                     .busy_o(a_busy), .y_bo(a_sq));
-                    
+
     multer b_square(.clk_i(clk_i), .rst_i(b_rst), .ready(b_ready), 
                     .a_bi(b_bi), .b_bi(b_bi), .start_i(start_mult), 
                     .busy_o(b_busy), .y_bo(b_sq));
-    
+
+
+    reg [16:0] sqrt_input;
     sqrt sqrt_res(.clk_i(clk_i), .rst_i(sum_rst), .ready(sqrt_ready),
-                  .a_bi(sum), .start_i(start_sqrt), 
-                  .busy_o(sqrt_busy), .y_bo(res));
-    
+                  .a_bi(sqrt_input), .start_i(start_sqrt), 
+                  .busy_o(sqrt_busy), .y_bo(res), 
+                  .summator_reg1_sqrt(sqrt_operand1), .summator_reg2_sqrt(sqrt_operand2), 
+                  .summator_result_sqrt(summator_result)
+                  );
     
     always @(posedge clk_i)
         if (rst_i) begin
@@ -95,7 +114,6 @@ module evaluator(
                         a_rst <= 0;
                         b_rst <= 0;
                         sum_rst <= 0;
-                        
                         state <= WORK_MULT ;
                         ready_in <= 0 ;
                         start_mult <= 1 ;
@@ -103,11 +121,11 @@ module evaluator(
                 WORK_MULT:
                     begin
                         if (start_mult) begin
-                            start_mult <= 0;
+                            start_mult <= 0;         
                         end else if (!a_busy && !b_busy) begin
                             a_res <= a_sq;
                             b_res <= b_sq;
-                            sum <= a_sq + b_sq;
+                            sqrt_input <= summator_result;
                             start_sqrt <= 1;
                             state <= WORK_SQRT;
                         end
@@ -117,10 +135,12 @@ module evaluator(
                         if (start_sqrt) begin
                             start_sqrt <= 0;
                         end else if (!sqrt_busy) begin
-                            y_bo <= res;                           
+                            y_bo <= res;                        
                             state <= IDLE;
                         end
                     end
             endcase
         end
+        
+        
 endmodule

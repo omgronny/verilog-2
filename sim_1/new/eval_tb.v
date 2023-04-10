@@ -115,7 +115,7 @@ always @(posedge clk_reg) begin
         rst_reg = 1;
         in = in+1;
 
-        if (in > 9) begin
+        if (in > 9) begin // 9
             $display("%d finish ", in);
             $finish;
         end

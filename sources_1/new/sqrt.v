@@ -29,7 +29,11 @@ module sqrt (
     
     output wire ready,
     output busy_o ,
-    output reg [7:0] y_bo
+    output reg [7:0] y_bo,
+
+    output wire [16:0] summator_reg1_sqrt,
+    output wire [16:0] summator_reg2_sqrt,
+    input wire [16:0] summator_result_sqrt
 );
 
     localparam IDLE = 1'b0 ;
@@ -44,11 +48,15 @@ module sqrt (
     reg [15:0] m ;
     reg [16:0] y_or_m, y ;
     
-    reg[16:0] bw, aw, y_temp, yw, mw;
+    reg[16:0] y_temp, yw, mw;
+    reg [16:0] aw, bw;
     
     assign busy_o = state ;
     assign end_step = (m == 0) ;
     assign ready = ready_in ;
+    
+    assign summator_reg1_sqrt = a;
+    assign summator_reg2_sqrt = -bw;
     
     always @(posedge clk_i)
         if (rst_i) begin
@@ -69,7 +77,7 @@ module sqrt (
                 WORK:
                 begin
                     if (end_step) begin
-                        state <= IDLE;
+                        state <= IDLE ;
                         y_bo <= y ;
                     end else begin
                         y_or_m <= bw;
@@ -84,11 +92,12 @@ module sqrt (
         always @*
             begin
                 bw = y | m ;
-                aw = a ;
                 yw = y >> 1 ;
-                if (aw >= bw) begin
-                    aw = aw - bw ;
+                if (a >= bw) begin
+                    aw = summator_result_sqrt ; // (now it calculates inside the summator)
                     yw = yw | m ;
+                end else begin
+                    aw = a;
                 end
                 mw = m >> 2 ;
             end

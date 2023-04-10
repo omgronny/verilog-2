@@ -48,9 +48,24 @@ wire busy;
 wire ready;
 wire [7:0] y;
 
+reg signal;
+wire [16:0] aw;
+wire [16:0] bw;
+wire [16:0] sum_res;
+wire [16:0] sum_res_for_output;
+
+summator main_summator(
+        .signal(signal), 
+        .a1(a_sq), .b1(b_sq),
+        .a2(aw), .b2(bw), 
+        .res1(sum_res_for_output), 
+        .res2(sum_res)
+    );
+
 sqrt sq(
     .clk_i(clk_reg), .rst_i(rst_reg), .start_i(start_i), 
-    .a_bi(a), .ready(ready), .busy_o(busy), .y_bo(y)
+    .a_bi(a), .ready(ready), .busy_o(busy), .y_bo(y),
+     .aw(aw), .bw(bw), .sum_res(sum_res)
 );
 
 always
